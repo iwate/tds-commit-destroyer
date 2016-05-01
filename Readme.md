@@ -1,4 +1,4 @@
-TSD Commit Destroyer
+TDS Commit Destroyer
 ===
 
 TBD
