@@ -53,9 +53,10 @@ func (p *Proxy) Start() {
 	//display both ends
 	p.Log.Info("Opened %s >>> %s", p.laddr.String(), p.raddr.String())
 
+  var exit bool
 	//bidirectional copy
-	go p.pipe(p.lconn, p.rconn)
-	go p.pipe(p.rconn, p.lconn)
+	go p.pipe(p.lconn, p.rconn, &exit)
+	go p.pipe(p.rconn, p.lconn, &exit)
 
 	//wait for close...
 	<-p.errsig
@@ -73,7 +74,7 @@ func (p *Proxy) err(s string, err error) {
 	p.erred = true
 }
 
-func (p *Proxy) pipe(src, dst io.ReadWriter) {
+func (p *Proxy) pipe(src, dst io.ReadWriter, exit *bool) {
 	islocal := src == p.lconn
 
 	var dataDirection string
@@ -99,24 +100,21 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			return
 		}
 		b := buff[:n]
-
 		
 		//show output
 		p.Log.Debug(dataDirection, n, "")
 		p.Log.Trace(byteFormat, b)
-
-		//write out result
-		n, err = dst.Write(b)
-		if err != nil {
-			p.err("Write failed '%s'\n", err)
-			return
+    
+    if b[0] == TRAN_MGR_REQ && b[30] == TM_COMMIT_XACT {
+			*exit = true;
 		}
-		if islocal {
-			p.sentBytes += uint64(n)
-		} else {
-			p.receivedBytes += uint64(n)
-		}
-		if b[0] == TRAN_MGR_REQ && b[30] == TM_COMMIT_XACT {
+		
+    if !islocal && *exit {
+		  return
+    }
+    dst.Write(b)
+		
+    if *exit {
 			p.Log.Info("COMMIT")
 			os.Exit(0)
 		}
