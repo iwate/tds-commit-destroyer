@@ -112,7 +112,7 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 		p.Log.Debug(dataDirection, n, "")
 		p.Log.Trace(byteFormat, b)
     
-    if   b[PACKET_TYPE] == SERVER_RES && b[TOKEN_TYPE] == ENV_CHANGE && b[ENV_CODE] == COMMIT_TRAN {
+    if b[PACKET_TYPE] == SERVER_RES && b[TOKEN_TYPE] == ENV_CHANGE && b[ENV_CODE] == COMMIT_TRAN {
 			p.Log.Info("!!!!DESTROY!!!!!")
 			os.Exit(0)
 		}
