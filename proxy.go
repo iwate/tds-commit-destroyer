@@ -8,6 +8,14 @@ import (
 
 const TRAN_MGR_REQ = 0x0e
 const TM_COMMIT_XACT = 0x07
+const SERVER_RES = 0x04
+const ENV_CHANGE = 0xe3
+const COMMIT_TRAN = 0x09
+
+const PACKET_TYPE = 0
+const TOKEN_TYPE = 8
+const ENV_CODE = 11
+const TM_TYPE = 30
 
 // Proxy - Manages a Proxy connection, piping data between local and remote.
 type Proxy struct {
@@ -99,26 +107,15 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			return
 		}
 		b := buff[:n]
-
 		
 		//show output
 		p.Log.Debug(dataDirection, n, "")
 		p.Log.Trace(byteFormat, b)
-
-		//write out result
-		n, err = dst.Write(b)
-		if err != nil {
-			p.err("Write failed '%s'\n", err)
-			return
-		}
-		if islocal {
-			p.sentBytes += uint64(n)
-		} else {
-			p.receivedBytes += uint64(n)
-		}
-		if b[0] == TRAN_MGR_REQ && b[30] == TM_COMMIT_XACT {
-			p.Log.Info("COMMIT")
+    
+    if   b[PACKET_TYPE] == SERVER_RES && b[TOKEN_TYPE] == ENV_CHANGE && b[ENV_CODE] == COMMIT_TRAN {
+			p.Log.Info("!!!!DESTROY!!!!!")
 			os.Exit(0)
 		}
+    dst.Write(b)
 	}
 }
